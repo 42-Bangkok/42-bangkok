@@ -6,5 +6,5 @@ apt update && apt install -y postgresql-client redis-tools
 
 curl https://get.volta.sh | bash
 /root/.volta/bin/volta install node@22
-
+npm install -g bun
 chmod +x create_databases.sh && sh create_databases.sh
