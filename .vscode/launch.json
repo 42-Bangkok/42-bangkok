@@ -1,0 +1,67 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Django ASGI(Hypercorn)",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "program": "${workspaceFolder}/.venv/bin/hypercorn",
+            "args": [
+                "app.asgi:application",
+                "--reload",
+                "-b",
+                "0.0.0.0:8000"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": true,
+            "django": false
+        },
+        {
+            "name": "FastAPI",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "program": "${workspaceFolder}/.venv/bin/fastapi",
+            "args": [
+                "dev",
+                "serve_fastapi.py",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8080"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "jinja": true
+        },
+        {
+            "name": "FastStream",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "program": "${workspaceFolder}/.venv/bin/faststream",
+            "args": [
+                "run",
+                "serve_faststream:app",
+                "--reload"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "jinja": true
+        },
+        {
+            "name": "Django",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/manage.py",
+            "args": [
+                "runserver"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "django": true,
+            "justMyCode": true
+        },
+    ]
+}

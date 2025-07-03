@@ -1,0 +1,15 @@
+{
+    "python.analysis.extraPaths": [
+      "backend"
+    ],
+    "python.analysis.typeCheckingMode": "basic",
+    "prettier.ignorePath": "frontend/.prettierignore",
+    "[python]": {
+      "editor.defaultFormatter": "charliermarsh.ruff",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit",
+        "source.fixAll.ruff": "explicit",
+      },
+    },
+  }
