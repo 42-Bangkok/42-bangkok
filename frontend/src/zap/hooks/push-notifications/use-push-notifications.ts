@@ -4,6 +4,7 @@ import { Effect } from "effect";
 import { toast } from "sonner";
 import useSWRMutation from "swr/mutation";
 
+import { ENV } from "@/lib/env.client";
 import { $fetch } from "@/lib/fetch";
 import { urlBase64ToUint8Array } from "@/zap/lib/pwa/pwa";
 import { usePushNotificationsStore } from "@/zap/stores/push-notifications.store";
@@ -44,7 +45,7 @@ export function usePushNotifications() {
         rollbackOnError: true,
         populateCache: (result) => result,
         onSuccess: () => {
-          toast.success(`Subscribed to notifications!`);
+          toast.success("Subscribed to notifications!");
         },
         onError: (error) => {
           if (store.subscription) {
@@ -76,7 +77,7 @@ export function usePushNotifications() {
           toast.success("We will miss you!");
         },
         onError: () => {
-          toast.error(`Failed to unsubscribe from notifications.`);
+          toast.error("Failed to unsubscribe from notifications.");
         },
       },
     );
@@ -97,13 +98,18 @@ export function usePushNotifications() {
 
         const sub = yield* _(
           Effect.tryPromise({
-            try: () =>
-              registration.pushManager.subscribe({
+            try: () => {
+              if (!ENV.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+                throw new Error("VAPID public key is not set");
+              }
+
+              return registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(
-                  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+                  ENV.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
                 ),
-              }),
+              });
+            },
             catch: () => {
               throw new Error("Failed to subscribe to push manager");
             },
@@ -116,7 +122,7 @@ export function usePushNotifications() {
         yield* _(
           Effect.tryPromise({
             try: () => subscribeTrigger({ subscription: serializedSub }),
-            catch: (e) => e,
+            catch: () => new Error("Failed to subscribe to push notifications"),
           }),
         );
       }).pipe(

@@ -1,9 +1,9 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { createAuthMiddleware } from "better-auth/api";
 import {
   admin,
   anonymous,
+  haveIBeenPwned,
   organization,
   twoFactor,
   username,
@@ -12,14 +12,9 @@ import { passkey } from "better-auth/plugins/passkey";
 
 import { SETTINGS } from "@/data/settings";
 import { db } from "@/db";
-import { createUserClient } from "@/openapi/clients";
-import {
-  sendForgotPasswordMail,
-  sendVerificationEmail,
-} from "@/zap/actions/emails.action";
-import { canSendEmail, updateLastEmailSent } from "@/zap/lib/resend/rate-limit";
-
-import { gatewayLoginHandler } from "./utils";
+import { ENV } from "@/lib/env.server";
+import { ZAP_DEFAULT_SETTINGS } from "@/zap.config";
+import { client } from "@/zap/lib/orpc/client";
 
 export const auth = betterAuth({
   appName: "Zap.ts",
@@ -28,65 +23,52 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: SETTINGS.AUTH.MINIMUM_PASSWORD_LENGTH,
     maxPasswordLength: SETTINGS.AUTH.MAXIMUM_PASSWORD_LENGTH,
-    requireEmailVerification: SETTINGS.AUTH.REQUIRE_EMAIL_VERIFICATION,
+    requireEmailVerification: SETTINGS.AUTH.REQUIRE_MAIL_VERIFICATION,
     sendResetPassword: async ({ user, url }) => {
-      const { canSend, timeLeft } = await canSendEmail(user.id);
+      const { canSend, timeLeft } = await client.mails.canSendMail({
+        userId: user.id,
+      });
       if (!canSend) {
         throw new Error(
           `Please wait ${timeLeft} seconds before requesting another password reset email.`,
         );
-        z;
       }
 
-      await sendForgotPasswordMail({
+      await client.mails.sendForgotPasswordMail({
         recipients: [user.email],
         subject: `${SETTINGS.MAIL.PREFIX} - Reset your password`,
         url,
       });
 
-      await updateLastEmailSent(user.id);
+      await client.mails.updateLastTimestampMailSent({ userId: user.id });
     },
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
-      const { canSend, timeLeft } = await canSendEmail(user.id);
+      const { canSend, timeLeft } = await client.mails.canSendMail({
+        userId: user.id,
+      });
       if (!canSend) {
         throw new Error(
           `Please wait ${timeLeft} seconds before requesting another password reset email.`,
         );
       }
 
-      await sendVerificationEmail({
+      await client.mails.sendVerificationMail({
         recipients: [user.email],
         subject: `${SETTINGS.MAIL.PREFIX} - Verify your email`,
         url,
       });
 
-      await updateLastEmailSent(user.id);
+      await client.mails.updateLastTimestampMailSent({ userId: user.id });
     },
   },
   socialProviders: {
     google: {
       enabled: true,
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: ENV.GOOGLE_CLIENT_ID || "",
+      clientSecret: ENV.GOOGLE_CLIENT_SECRET || "",
     },
-  },
-  hooks: {
-    after: createAuthMiddleware(async (ctx) => {
-      if (ctx.path == "/callback/:id") {
-        const userId = ctx.context.newSession!.session!.userId;
-        const provider = ctx.params.id;
-        await gatewayLoginHandler({ userId, provider });
-      }
-      if (ctx.path == "/logout") {
-        const gatewayUserClinet = await createUserClient();
-        const { data, error } = await gatewayUserClinet.POST(
-          "/api/account/auths/logout/",
-        );
-        console.log(data, error);
-      }
-    }),
   },
   plugins: [
     twoFactor(),
@@ -99,5 +81,9 @@ export const auth = betterAuth({
     passkey(),
     admin(),
     organization(),
+    haveIBeenPwned({
+      customPasswordCompromisedMessage:
+        ZAP_DEFAULT_SETTINGS.AUTH.PASSWORD_COMPROMISED_MESSAGE,
+    }),
   ],
 });
