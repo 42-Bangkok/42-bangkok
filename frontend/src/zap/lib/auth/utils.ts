@@ -1,107 +1,18 @@
-import { and, eq } from "drizzle-orm";
-import { nanoid } from "nanoid";
+import { toast } from "sonner";
 
-import { db } from "@/db";
-import { account } from "@/db/schema";
-import {
-  createGatewayServiceClient,
-  createGatewayUserClientByAccessToken,
-} from "@/openapi/clients";
+import { ZAP_DEFAULT_SETTINGS } from "@/zap.config";
 
-export interface IGatewayLoginHandler {
-  userId: string;
-  provider: string;
-}
-
-/**
- * Handles gateway login process for a user with an existing provider account.
- *
- * This function performs the following operations:
- * 1. Retrieves the user's provider account from the database
- * 2. Authenticates with the gateway service using the provider's access token
- * 3. Fetches user information from the gateway
- * 4. Updates existing gateway account credentials or creates a new gateway account record
- *
- * @param p - Gateway login handler parameters
- * @param p.userId - The ID of the user performing the login
- * @param p.provider - The provider identifier for the existing account
- *
- * @throws {Error} When gateway login fails or user data cannot be fetched
- *
- * @returns {Promise<void>} Resolves when the gateway account is successfully created or updated
- */
-export async function gatewayLoginHandler(p: IGatewayLoginHandler) {
-  const { userId, provider } = p;
-  const providerAccount = await db.query.account.findFirst({
-    where: (account, { eq, and }) =>
-      and(eq(account.userId, userId!), eq(account.providerId, provider!)),
-  });
-  const gatewayServiceClient = createGatewayServiceClient();
-  const { data: gatewayLogin, error: gatewayLoginError } =
-    await gatewayServiceClient.POST(
-      "/api/account/auths/login/",
-      // @ts-expect-error these are ok
-      { body: { provider, access_token: providerAccount.accessToken } },
-    );
-  if (gatewayLoginError) {
-    console.error("Error logging in to gateway:", gatewayLoginError);
-    throw new Error("Failed to log in to gateway");
-  }
-  const gatewayUserClient = createGatewayUserClientByAccessToken({
-    accessToken: gatewayLogin.access_token,
-  });
-  // throw if the response is not ok
-  const { data: gatewayMe, error: meError } = await gatewayUserClient.GET(
-    "/api/account/users/me/",
-  );
-  if (meError) {
-    console.error("Error fetching user data from gateway:", meError);
-    throw new Error("Failed to fetch user data from gateway");
-  }
+export function handleCompromisedPasswordError(error: unknown): void {
   if (
-    await db.query.account.findFirst({
-      where: (account, { eq, and }) =>
-        and(
-          eq(account.userId, userId!),
-          eq(account.accountId, gatewayMe.user.id!),
-          eq(account.providerId, "gateway"),
-        ),
-    })
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "PASSWORD_COMPROMISED"
   ) {
-    await db
-      .update(account)
-      .set({
-        accessToken: gatewayLogin.access_token,
-        refreshToken: gatewayLogin.refresh_token,
-        accessTokenExpiresAt: new Date(
-          gatewayLogin.expires_in * 1000 + Date.now(),
-        ),
-        refreshTokenExpiresAt: new Date(
-          gatewayLogin.refresh_token_expires_in * 1000 + Date.now(),
-        ),
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(account.userId, userId!),
-          eq(account.accountId, gatewayMe.user.id!),
-          eq(account.providerId, "gateway"),
-        ),
-      );
-    return;
+    toast.error(ZAP_DEFAULT_SETTINGS.AUTH.PASSWORD_COMPROMISED_MESSAGE);
+  } else {
+    toast.error("An error occurred during authentication. Please try again.");
   }
-  await db.insert(account).values({
-    id: nanoid(),
-    userId: userId!,
-    accountId: gatewayMe.user.id!,
-    providerId: "gateway",
-    accessToken: gatewayLogin.access_token,
-    accessTokenExpiresAt: new Date(gatewayLogin.expires_in * 1000 + Date.now()),
-    refreshTokenExpiresAt: new Date(
-      gatewayLogin.refresh_token_expires_in * 1000 + Date.now(),
-    ),
-    refreshToken: gatewayLogin.refresh_token,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+
+  throw error;
 }
