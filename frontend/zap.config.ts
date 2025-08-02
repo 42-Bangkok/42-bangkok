@@ -2,51 +2,62 @@
  * ZAP:TODO
  * - Change the current config file to your own configuration
  * - Check `public/sw.js` file and change the URL in the `clients.openWindow` function
+ * - Check `next-sitemap.config.js` and change the `siteUrl` to your own URL (e.g. `https://yourdomain.com`)
+ * - Change `social-provider-button.tsx` to customize icon for each auth provider
+ * - Configure and customize flags in `src/zap/lib/flags/flags.ts` and `src/lib/flags.ts`
  */
-import { Metadata } from "next";
+import { DEV, ENV } from "@/lib/env.client";
+import type { ZapSettings } from "@/zap/types/zap.config.types";
+import type { Metadata } from "next";
 
-import { ZapSettings } from "@/zap/types/zap.config.types";
-
-export const VERCEL = process.env.VERCEL_ENV ? true : false;
-export const DEV = process.env.NODE_ENV !== "production";
-
-export const APP_NAME = "42 Bangkok";
-export const APP_DESCRIPTION =
-  "42 Bangkok is a student-run organization that provides a unique and innovative approach to education, focusing on peer-to-peer learning and project-based curriculum. Our mission is to empower students to become self-directed learners and problem solvers in a collaborative environment.";
+export const APP_NAME = "Zap.ts";
+export const APP_DESCRIPTION = "Build application as fast as a zap.";
 export const BASE_URL = DEV
   ? "http://localhost:3000"
-  : "https://app.42bangkok.com";
+  : "https://demo.zap-ts.alexandretrotel.org";
 
-export const ZAP_DEFAULT_FLAGS = {
-  VERCEL: {
-    ENABLE_ANALYTICS: VERCEL,
-    ENABLE_SPEED_INSIGHTS: VERCEL,
-  },
-  ENABLE_POSTHOG: false,
-};
-
-const AI_SYSTEM_PROMPT = "You are a helpful assistant.";
+export type Provider = "apple" | "google";
 
 export const ZAP_DEFAULT_SETTINGS: ZapSettings = {
   AI: {
-    SYSTEM_PROMPT: AI_SYSTEM_PROMPT,
+    SYSTEM_PROMPT: "You are a helpful assistant.",
   },
   AUTH: {
-    REQUIRE_EMAIL_VERIFICATION: true,
+    REQUIRE_MAIL_VERIFICATION: true,
     ENABLE_SOCIAL_PROVIDER: true,
     MINIMUM_USERNAME_LENGTH: 3,
     MAXIMUM_USERNAME_LENGTH: 20,
     MINIMUM_PASSWORD_LENGTH: 8,
     MAXIMUM_PASSWORD_LENGTH: 128,
+    LOGIN_URL: "/login",
     REDIRECT_URL_AFTER_SIGN_UP: "/login",
     REDIRECT_URL_AFTER_SIGN_IN: "/app",
+    PROVIDERS: ["apple", "google"],
+    PASSWORD_COMPROMISED_MESSAGE:
+      "This password has been exposed in a data breach. Please choose a stronger, unique password.",
+    PUBLIC_PATHS: [
+      "/",
+      "/login",
+      "/register",
+      "/forgot-password",
+      "/reset-password",
+      "/terms-of-service",
+      "/privacy-policy",
+      "/cookie-policy",
+      "/_vercel/speed-insights/vitals",
+      "/_vercel/insights/view",
+    ],
   },
-  NOTIFICATIONS: {
-    VAPID_MAIL: "",
+  BLOG: {
+    BASE_PATH: "/blog",
   },
   MAIL: {
     PREFIX: APP_NAME,
     RATE_LIMIT_SECONDS: 60,
+    FROM: `${APP_NAME} <${ENV.ZAP_MAIL}>`,
+  },
+  NOTIFICATIONS: {
+    VAPID_MAIL: ENV.ZAP_MAIL,
   },
   PWA: {
     NAME: APP_NAME,
@@ -67,6 +78,11 @@ export const ZAP_DEFAULT_SETTINGS: ZapSettings = {
         type: "image/png",
       },
     ],
+  },
+  WAITLIST: {
+    TITLE: "try Zap.ts",
+    DESCRIPTION: "be the first to build applications as fast as a zap.",
+    SHOW_COUNT: true,
   },
 };
 
@@ -89,12 +105,12 @@ export const ZAP_DEFAULT_METADATA: Metadata = {
   ],
   authors: [
     {
-      name: "pumidol",
-      url: "pumidol.com",
+      name: "Alexandre Trotel",
+      url: "https://www.alexandretrotel.org",
     },
   ],
-  creator: "Pumidol Leeleredsakulvong",
-  publisher: "Pumidol Leeleredsakulvong",
+  creator: "Alexandre Trotel",
+  publisher: "Alexandre Trotel",
   metadataBase: new URL(BASE_URL),
   openGraph: {
     title: APP_NAME,
@@ -134,7 +150,7 @@ export const ZAP_DEFAULT_METADATA: Metadata = {
     card: "summary_large_image",
     title: APP_NAME,
     description: APP_DESCRIPTION,
-    creator: "@42bangkok",
+    creator: "@alexandretrotel",
     images: [`${BASE_URL}/og.png`],
   },
   appleWebApp: {
@@ -144,7 +160,7 @@ export const ZAP_DEFAULT_METADATA: Metadata = {
   },
   appLinks: {
     web: {
-      url: "https://app.42bangkok.com",
+      url: "https://demo.zap-ts.alexandretrotel.org",
       should_fallback: true,
     },
   },
