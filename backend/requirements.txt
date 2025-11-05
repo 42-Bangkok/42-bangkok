@@ -112,9 +112,9 @@ discord-webhook==1.4.1 \
     --hash=sha256:1ed6a07d16ca0e6e6b1a91536c2fc34d0ba8251e5be37fe8850189aaf1155ee8 \
     --hash=sha256:2913c3ccb216e7d82911f96296f78b6b28b68a6f33a6fa5a61fc2da697b34a4d
     # via gateway
-django==5.2.4 \
-    --hash=sha256:60c35bd96201b10c6e7a78121bd0da51084733efa303cc19ead021ab179cef5e \
-    --hash=sha256:a1228c384f8fa13eebc015196db7b3e08722c5058d4758d20cb287503a540d8f
+django==5.2.8 \
+    --hash=sha256:23254866a5bb9a2cfa6004e8b809ec6246eba4b58a7589bc2772f1bcc8456c7f \
+    --hash=sha256:37e687f7bd73ddf043e2b6b97cfe02fcbb11f2dbb3adccc6a2b18c6daa054d7f
     # via
     #   django-celery-beat
     #   django-cors-headers
